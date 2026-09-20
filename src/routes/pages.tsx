@@ -6,6 +6,7 @@ import {
   findEpisodeWithPlatformsByNumber,
   listEpisodes,
 } from '../repositories/episodes'
+import { findEpisodeNumberByAlias } from '../repositories/episode_aliases'
 import { episodePath } from '../utils/episode_path'
 import { Home } from '../views/home'
 import { EpisodeDetail } from '../views/episode_detail'
@@ -37,11 +38,14 @@ pages.get('/episodes/:param', async (c) => {
   const param = c.req.param('param')
 
   if (!/^\d+$/.test(param)) {
+    // guid で引けなければ、既知の別名 ID（X 投稿済みの LISTEN 側の別系統 ID）も見る
     const episode = await findEpisodeByGuid(c.env.DB, param)
-    if (episode === null) {
+    const redirectTo =
+      episode?.episode_number ?? (await findEpisodeNumberByAlias(c.env.DB, param))
+    if (redirectTo === null) {
       return c.notFound()
     }
-    return c.redirect(canonicalUrlFor(c, episodePath(episode.episode_number)), 301)
+    return c.redirect(canonicalUrlFor(c, episodePath(redirectTo)), 301)
   }
 
   const episodeNumber = Number(param)

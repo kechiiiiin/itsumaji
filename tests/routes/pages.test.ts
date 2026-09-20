@@ -60,6 +60,27 @@ describe('GET /episodes/:param', () => {
     expect(res.headers.get('location')).toBe('http://localhost/episodes/1')
   })
 
+  it('別名 ID の URL は対応するエピソード番号へ 301 リダイレクトする', async () => {
+    await seedThree()
+    await env.DB.prepare(
+      'INSERT OR IGNORE INTO episode_aliases (alias, episode_number) VALUES (?, ?)'
+    ).bind('alias-for-one', 1).run()
+
+    const res = await get('/episodes/alias-for-one')
+
+    expect(res.status).toBe(301)
+    expect(res.headers.get('location')).toBe('http://localhost/episodes/1')
+  })
+
+  it('マイグレーションで投入済みの別名 ID も 301 リダイレクトする', async () => {
+    await seedThree()
+
+    const res = await get('/episodes/01m023va4d3pbq7v4gfvet5pdg')
+
+    expect(res.status).toBe(301)
+    expect(res.headers.get('location')).toBe('http://localhost/episodes/28')
+  })
+
   it('存在しない guid は 404 を返す', async () => {
     await seedThree()
 
