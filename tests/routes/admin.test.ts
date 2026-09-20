@@ -23,7 +23,10 @@ function postEpisodePlatforms(body: unknown) {
     '/episode-platforms',
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-admin-token',
+      },
       body: JSON.stringify(body),
     },
     env,

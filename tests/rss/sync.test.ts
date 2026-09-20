@@ -94,7 +94,7 @@ describe('syncRss', () => {
     ])
   })
 
-  it('同じエピソードが再取得されても既存レコードは上書きされない', async () => {
+  it('同じエピソードが再取得されると RSS の内容で上書きされる（事前登録を実データで置き換える）', async () => {
     interceptRss(RSS_XML, 2)
 
     await syncRss(env)
@@ -110,7 +110,7 @@ describe('syncRss', () => {
       .prepare('SELECT title, category_id FROM episodes WHERE guid = ?')
       .bind('guid-1')
       .first<{ title: string; category_id: number }>()
-    expect(episode?.title).toBe('手動で書き換えたタイトル')
+    expect(episode?.title).toBe('雑談：近況報告')
     expect(episode?.category_id).toBe(CATEGORY_IDS.ZATSUDAN)
 
     const count = await env.DB

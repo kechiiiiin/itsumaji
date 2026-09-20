@@ -11,7 +11,7 @@ export default defineWorkersConfig(async () => {
           singleWorker: true,
           wrangler: { configPath: './wrangler.jsonc' },
           miniflare: {
-            bindings: { TEST_MIGRATIONS: migrations },
+            bindings: { TEST_MIGRATIONS: migrations, ADMIN_TOKEN: 'test-admin-token' },
           },
         },
       },
