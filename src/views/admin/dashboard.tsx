@@ -4,6 +4,7 @@ import { AdminLayout } from './layout'
 import type { Episode } from '../../models/db/episode'
 import { CATEGORY_IDS } from '../../constants/categories'
 import { PLATFORM_INFO } from '../../constants/platforms'
+import { episodePathOf } from '../../utils/episode_path'
 
 type Props = {
     episodes: Episode[]
@@ -73,7 +74,7 @@ export const Dashboard: FC<Props> = ({ episodes, platformsByGuid, message, error
                                     #{ep.episode_number}
                                 </td>
                                 <td style="padding:14px 10px;">
-                                    <a href={`/episodes/${ep.guid}`} target="_blank" style="color:var(--ink);">{ep.title || '—'}</a>
+                                    <a href={episodePathOf(ep)} target="_blank" style="color:var(--ink);">{ep.title || '—'}</a>
                                 </td>
                                 <td style="padding:14px 10px;font-size:13px;color:var(--ink-subtle);">
                                     {ep.category_id === CATEGORY_IDS.ZATSUDAN ? '雑談' : '技術'}

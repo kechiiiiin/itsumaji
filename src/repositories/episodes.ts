@@ -94,7 +94,15 @@ export type AdjacentEpisodes = {
 
 export async function findAdjacentEpisodes(db: D1Database, currentGuid: string): Promise<AdjacentEpisodes> {
     const episodes = await listEpisodes(db)
-    const index = episodes.findIndex((ep) => ep.guid === currentGuid)
+    return adjacentAt(episodes, episodes.findIndex((ep) => ep.guid === currentGuid))
+}
+
+export async function findAdjacentEpisodesByNumber(db: D1Database, episodeNumber: number): Promise<AdjacentEpisodes> {
+    const episodes = await listEpisodes(db)
+    return adjacentAt(episodes, episodes.findIndex((ep) => ep.episode_number === episodeNumber))
+}
+
+function adjacentAt(episodes: Episode[], index: number): AdjacentEpisodes {
     if (index === -1) {
         return { prev: null, next: null }
     }
@@ -113,11 +121,27 @@ export async function findEpisodeWithPlatforms(db: D1Database, episode_id: strin
         WHERE e.guid = ?
     `).bind(episode_id).all<EpisodeRow>()
 
-    if (result.results.length === 0) {
+    return toPlatformEpisode(result.results)
+}
+
+export async function findEpisodeWithPlatformsByNumber(db: D1Database, episodeNumber: number): Promise<PlatformEpisode | null> {
+    const result = await db.prepare(`
+        SELECT *
+        FROM episodes e
+        INNER JOIN episode_platforms ep ON e.guid = ep.episode_id
+        INNER JOIN platforms p ON p.id = ep.platform_id
+        WHERE e.episode_number = ?
+    `).bind(episodeNumber).all<EpisodeRow>()
+
+    return toPlatformEpisode(result.results)
+}
+
+function toPlatformEpisode(rows: EpisodeRow[]): PlatformEpisode | null {
+    if (rows.length === 0) {
         return null
     }
 
-    const first = result.results[0]
+    const first = rows[0]
     return {
         episode: {
             guid: first.guid,
@@ -130,7 +154,7 @@ export async function findEpisodeWithPlatforms(db: D1Database, episode_id: strin
             season: first.season,
             episode_number: first.episode_number,
         },
-        platforms: result.results.map((row) => ({
+        platforms: rows.map((row) => ({
             name: row.name,
             icon_url: row.icon_url,
             url: row.url,

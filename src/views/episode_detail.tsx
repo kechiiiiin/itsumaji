@@ -5,6 +5,7 @@ import type { Episode } from '../models/db/episode'
 import type { AdjacentEpisodes } from '../repositories/episodes'
 import { Layout } from './layout'
 import { formatDate, getCategoryInfo, parseTitle } from '../utils/episode_title'
+import { episodePathOf } from '../utils/episode_path'
 
 type Props = {
   data: PlatformEpisode
@@ -45,7 +46,7 @@ const NavItem: FC<{ ep: Episode | null; direction: 'prev' | 'next' }> = ({ ep, d
     }
     const parsed = parseTitle(ep.title)
     return (
-      <a class="ep-nav__item ep-nav__item--prev" href={`/episodes/${encodeURIComponent(ep.guid)}`}>
+      <a class="ep-nav__item ep-nav__item--prev" href={episodePathOf(ep)}>
         <span class="ep-nav__direction">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
           前のエピソード
@@ -71,7 +72,7 @@ const NavItem: FC<{ ep: Episode | null; direction: 'prev' | 'next' }> = ({ ep, d
   }
   const parsed = parseTitle(ep.title)
   return (
-    <a class="ep-nav__item ep-nav__item--next" href={`/episodes/${encodeURIComponent(ep.guid)}`}>
+    <a class="ep-nav__item ep-nav__item--next" href={episodePathOf(ep)}>
       <span class="ep-nav__direction">
         次のエピソード
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>

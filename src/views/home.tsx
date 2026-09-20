@@ -2,6 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { Episode } from '../models/db/episode'
 import { Layout } from './layout'
 import { formatDate, formatEpisodeNumber, getCategoryInfo, parseTitle } from '../utils/episode_title'
+import { episodePathOf } from '../utils/episode_path'
 
 const RSS_URL = 'https://rss.listen.style/p/itsumaji-radio/rss'
 
@@ -51,7 +52,7 @@ export const Home: FC<{ episodes: Episode[]; canonicalUrl?: string }> = ({ episo
             <li>
               <a
                 class={`episode episode--${category}`}
-                href={`/episodes/${encodeURIComponent(ep.guid)}`}
+                href={episodePathOf(ep)}
               >
                 <div class="episode__meta">
                   <span class={`episode__tag episode__tag--${category}`}>
