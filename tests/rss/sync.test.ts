@@ -32,6 +32,31 @@ const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </channel>
 </rss>`
 
+// 別名がまだ登録されていない回（#99）を1件だけ含む RSS
+const NEW_EPISODE_RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+  <channel>
+    <title>いつまじラジオ</title>
+    <item>
+      <title><![CDATA[まだ別名の無い回]]></title>
+      <description><![CDATA[説明99]]></description>
+      <link>https://listen.style/p/itsumaji-radio/ep99</link>
+      <guid isPermaLink="false">guid-99</guid>
+      <pubDate>Sat, 18 Apr 2026 23:08:46 +0000</pubDate>
+      <itunes:duration>00:10:00</itunes:duration>
+      <itunes:image href="https://example.com/image99.jpg"/>
+      <itunes:episode>99</itunes:episode>
+    </item>
+  </channel>
+</rss>`
+
+const LISTEN_PAGE_ORIGIN = 'https://listen.style'
+const LISTEN_PAGE_PATH = '/p/itsumaji-radio/ep99'
+
+const LISTEN_PAGE_HTML = `<html><body><script>
+  window.__data = { episodeId: '01zz0zzzzzzzzzzzzzzzzzzzzz', title: 'まだ別名の無い回' }
+</script></body></html>`
+
 const EMPTY_RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
   <channel>
@@ -52,6 +77,7 @@ beforeEach(async () => {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM episode_platforms'),
     env.DB.prepare('DELETE FROM episodes'),
+    env.DB.prepare('DELETE FROM episode_aliases WHERE episode_number = 99'),
   ])
 })
 
@@ -61,6 +87,21 @@ function interceptRss(xml: string, times = 1) {
     .intercept({ path: RSS_URL_PATH })
     .reply(200, xml, { headers: { 'Content-Type': 'application/xml' } })
     .times(times)
+}
+
+function interceptListenPage(status: number, body: string) {
+  fetchMock
+    .get(LISTEN_PAGE_ORIGIN)
+    .intercept({ path: LISTEN_PAGE_PATH })
+    .reply(status, body, { headers: { 'Content-Type': 'text/html' } })
+}
+
+async function aliasesFor(episodeNumber: number): Promise<string[]> {
+  const result = await env.DB
+    .prepare('SELECT alias FROM episode_aliases WHERE episode_number = ?')
+    .bind(episodeNumber)
+    .all<{ alias: string }>()
+  return result.results.map((row) => row.alias)
 }
 
 describe('syncRss', () => {
@@ -122,6 +163,55 @@ describe('syncRss', () => {
       .prepare('SELECT COUNT(*) as c FROM episode_platforms')
       .first<{ c: number }>()
     expect(platformCount?.c).toBe(2)
+  })
+
+  it('別名が未登録の回は LISTEN のページから episodeId を採取して登録する', async () => {
+    interceptRss(NEW_EPISODE_RSS_XML)
+    interceptListenPage(200, LISTEN_PAGE_HTML)
+
+    await syncRss(env)
+
+    expect(await aliasesFor(99)).toEqual(['01zz0zzzzzzzzzzzzzzzzzzzzz'])
+  })
+
+  it('別名が登録済みの回は LISTEN のページを取得しない', async () => {
+    await env.DB
+      .prepare('INSERT OR IGNORE INTO episode_aliases (alias, episode_number) VALUES (?, ?)')
+      .bind('01zz0zzzzzzzzzzzzzzzzzzzzz', 99)
+      .run()
+    interceptRss(NEW_EPISODE_RSS_XML)
+    // LISTEN ページの interceptor を張らない = fetch すればテストが失敗する
+
+    await syncRss(env)
+
+    expect(await aliasesFor(99)).toEqual(['01zz0zzzzzzzzzzzzzzzzzzzzz'])
+  })
+
+  it('LISTEN のページ取得に失敗しても RSS 同期自体は成功する', async () => {
+    interceptRss(NEW_EPISODE_RSS_XML)
+    interceptListenPage(500, 'Internal Server Error')
+
+    await syncRss(env)
+
+    const episode = await env.DB
+      .prepare('SELECT title FROM episodes WHERE guid = ?')
+      .bind('guid-99')
+      .first<{ title: string }>()
+    expect(episode?.title).toBe('まだ別名の無い回')
+    expect(await aliasesFor(99)).toEqual([])
+  })
+
+  it('LISTEN のページに episodeId が無くても RSS 同期自体は成功する', async () => {
+    interceptRss(NEW_EPISODE_RSS_XML)
+    interceptListenPage(200, '<html><body>episodeId なし</body></html>')
+
+    await syncRss(env)
+
+    const count = await env.DB
+      .prepare('SELECT COUNT(*) as c FROM episodes')
+      .first<{ c: number }>()
+    expect(count?.c).toBe(1)
+    expect(await aliasesFor(99)).toEqual([])
   })
 
   it('RSS が 0 件のときは DB への書き込みを行わない', async () => {

@@ -81,6 +81,24 @@ describe('GET /episodes/:param', () => {
     expect(res.headers.get('location')).toBe('http://localhost/episodes/28')
   })
 
+  it('シード済みの別名 ID（最新回）は該当番号へ 301 リダイレクトする', async () => {
+    await seedThree()
+
+    const res = await get('/episodes/01m2t9fmmhkgxnf5f4tgbdanvq')
+
+    expect(res.status).toBe(301)
+    expect(res.headers.get('location')).toBe('http://localhost/episodes/33')
+  })
+
+  it('シード済みの別名 ID（#0 の自己紹介回）は /episodes/0 へ 301 リダイレクトする', async () => {
+    await seedThree()
+
+    const res = await get('/episodes/01kfsmmcf9wd076ntj5jqrrvev')
+
+    expect(res.status).toBe(301)
+    expect(res.headers.get('location')).toBe('http://localhost/episodes/0')
+  })
+
   it('存在しない guid は 404 を返す', async () => {
     await seedThree()
 

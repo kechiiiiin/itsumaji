@@ -14,3 +14,10 @@ export async function insertEpisodeAlias(
         'INSERT OR IGNORE INTO episode_aliases (alias, episode_number) VALUES (?, ?)'
     ).bind(alias, episodeNumber).run()
 }
+
+export async function listAliasEpisodeNumbers(db: D1Database): Promise<Set<number>> {
+    const result = await db.prepare(
+        'SELECT episode_number FROM episode_aliases'
+    ).all<{ episode_number: number }>()
+    return new Set(result.results.map((row) => row.episode_number))
+}
