@@ -139,6 +139,69 @@ describe('parseRss', () => {
     expect(results).toEqual([])
   })
 
+  it('正常系：末尾【雑談】（番号なし）は雑談カテゴリになる', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+  <channel>
+    <title>いつまじラジオ</title>
+    <item>
+      <title><![CDATA[ドーパミンデトックスをやってみた｜…【雑談】]]></title>
+      <description><![CDATA[説明テキスト]]></description>
+      <link>https://listen.style/p/itsumaji-radio/dopamine</link>
+      <guid isPermaLink="false">dopamine-guid</guid>
+      <pubDate>Sat, 18 Apr 2026 23:08:46 +0000</pubDate>
+      <itunes:duration>00:30:00</itunes:duration>
+      <itunes:image href="https://example.com/dopamine.jpg"/>
+    </item>
+  </channel>
+</rss>`
+
+    const results = parseRss(xml)
+    expect(results[0].episode.category_id).toBe(1)
+  })
+
+  it('正常系：末尾【雑談】＋番号は雑談カテゴリになる', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+  <channel>
+    <title>いつまじラジオ</title>
+    <item>
+      <title><![CDATA[ドーパミンデトックスをやってみた｜…【雑談】 #31]]></title>
+      <description><![CDATA[説明テキスト]]></description>
+      <link>https://listen.style/p/itsumaji-radio/dopamine31</link>
+      <guid isPermaLink="false">dopamine31-guid</guid>
+      <pubDate>Sat, 18 Apr 2026 23:08:46 +0000</pubDate>
+      <itunes:duration>00:30:00</itunes:duration>
+      <itunes:image href="https://example.com/dopamine31.jpg"/>
+    </item>
+  </channel>
+</rss>`
+
+    const results = parseRss(xml)
+    expect(results[0].episode.category_id).toBe(1)
+  })
+
+  it('正常系：どちらの雑談マーカーも無いタイトル（番号あり）は技術カテゴリになる', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+  <channel>
+    <title>いつまじラジオ</title>
+    <item>
+      <title><![CDATA[戦略の要諦について #30]]></title>
+      <description><![CDATA[説明テキスト]]></description>
+      <link>https://listen.style/p/itsumaji-radio/strategy30</link>
+      <guid isPermaLink="false">strategy30-guid</guid>
+      <pubDate>Sat, 18 Apr 2026 23:08:46 +0000</pubDate>
+      <itunes:duration>00:30:00</itunes:duration>
+      <itunes:image href="https://example.com/strategy30.jpg"/>
+    </item>
+  </channel>
+</rss>`
+
+    const results = parseRss(xml)
+    expect(results[0].episode.category_id).toBe(2)
+  })
+
   it('正常系：CDATA なしの title/description もパースできる', () => {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">

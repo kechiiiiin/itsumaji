@@ -41,7 +41,7 @@ export function parseRss(xml: string): RssEpisode[] {
     const items: RssItem[] = parsed.rss.channel.item ?? []
 
     return items.map((item: RssItem): RssEpisode => {
-        const isZatsudan = item.title.startsWith('雑談：')
+        const isZatsudan = item.title.startsWith('雑談：') || /【雑談】\s*(#\d+)?\s*$/.test(item.title)
         return {
             episode: {
                 guid: item.guid["#text"],

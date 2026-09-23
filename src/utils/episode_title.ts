@@ -20,6 +20,7 @@ export function getCategoryInfo(categoryId: number): CategoryInfo {
 }
 
 const ZATSU_PREFIX = '雑談：'
+const ZATSU_SUFFIX = '【雑談】'
 
 export function parseTitle(title: string): ParsedTitle {
   const numMatch = title.match(/\s*#(\d+)\s*$/)
@@ -28,9 +29,13 @@ export function parseTitle(title: string): ParsedTitle {
     ? title.slice(0, numMatch.index ?? title.length).trim()
     : title
 
-  const cleanTitle = stripped.startsWith(ZATSU_PREFIX)
-    ? stripped.slice(ZATSU_PREFIX.length).trim()
+  const withoutSuffix = stripped.endsWith(ZATSU_SUFFIX)
+    ? stripped.slice(0, stripped.length - ZATSU_SUFFIX.length).trim()
     : stripped
+
+  const cleanTitle = withoutSuffix.startsWith(ZATSU_PREFIX)
+    ? withoutSuffix.slice(ZATSU_PREFIX.length).trim()
+    : withoutSuffix
 
   return { number, cleanTitle }
 }
